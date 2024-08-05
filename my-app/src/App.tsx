@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
@@ -9,156 +9,190 @@ enum Status {
 }
 
 function App() {
-  const word = "plunk";
-  const [letter1, setLetter1] = useState('');
-  const [letter2, setLetter2] = useState('');
-  const [letter3, setLetter3] = useState('');
-  const [letter4, setLetter4] = useState('');
-  const [letter5, setLetter5] = useState('');
-  const [index, setIndex] = useState(0);
-  const inputRef1 = useRef<HTMLInputElement>(null);
-  const inputRef2 = useRef<HTMLInputElement>(null);
-  const inputRef3 = useRef<HTMLInputElement>(null);
-  const inputRef4 = useRef<HTMLInputElement>(null);
-  const inputRef5 = useRef<HTMLInputElement>(null);
-  let inputRefArray = [
-    {ref: inputRef1, result: '', letter: () => letter1, setLetter: (l: string) => setLetter1(l)},
-    {ref: inputRef2, result: '', letter: () => letter2, setLetter: (l: string) => setLetter2(l)},
-    {ref: inputRef3, result: '', letter: () => letter3, setLetter: (l: string) => setLetter3(l)},
-    {ref: inputRef4, result: '', letter: () => letter4, setLetter: (l: string) => setLetter4(l)},
-    {ref: inputRef5, result: '', letter: () => letter5, setLetter: (l: string) => setLetter5(l)}
-  ];
+  const word = "plunk".toUpperCase();
+  const tryCount = 6;
+  const base: React.CSSProperties = {
+    width: 56,
+    height: 56,
+    boxSizing: "border-box",
+    textAlign: "center",
+    padding: '0 10px',
+    margin: '3px',
+    border: "1.5px solid rgb(240, 185, 11)",
+    background: "rgb(11, 14, 17)",
+    fontSize: 24,
+    fontWeight: 600,
+    lineHeight: 32,
+    color: "rgb(240, 185, 11)",
+    borderRadius: 6,
+    outline: 0,
+  };
+  
+  const success: React.CSSProperties = {
+    width: 56,
+    height: 56,
+    boxSizing: "border-box",
+    textAlign: "center",
+    padding: '0 10px',
+    margin: '3px',
+    border: "1.5px solid rgb(2, 192, 118)",
+    background: "rgb(2, 192, 118)",
+    fontSize: 24,
+    fontWeight: 600,
+    lineHeight: 32,
+    color: "white",
+    borderRadius: 6,
+    outline: 0,
+  };
+  
+  const warning: React.CSSProperties = {
+    width: 56,
+    height: 56,
+    boxSizing: "border-box",
+    textAlign: "center",
+    padding: '0 10px',
+    margin: '3px',
+    border: "1.5px solid rgb(240, 185, 11)",
+    background: "rgb(240, 185, 11)",
+    fontSize: 24,
+    fontWeight: 600,
+    lineHeight: 32,
+    color: "white",
+    borderRadius: 6,
+    outline: 0,
+  };
+  
+  const danger: React.CSSProperties = {
+    width: 56,
+    height: 56,
+    boxSizing: "border-box",
+    textAlign: "center",
+    padding: '0 10px',
+    margin: '3px',
+    border: "1.5px solid rgb(71, 77, 87)",
+    background: "rgb(71, 77, 87)",
+    fontSize: 24,
+    fontWeight: 600,
+    lineHeight: 32,
+    color: "white",
+    borderRadius: 6,
+    outline: 0,
+  };
 
-  const handleChange = (e: any) => {
-    const max = inputRefArray.length;
-    if (index < max) {
-      inputRefArray[index].setLetter(e.target.value);
-      const nextIndex = index === max - 1 ? index : index + 1;
-      setIndex(nextIndex);
-      inputRefArray[nextIndex].ref.current?.focus();
+  let [letterInputs, setLetterInputs] = useState<any[][]>([]);
+  let [row, setRow] = useState(0);
+
+  useEffect(() => {
+    const inputMaster = [];
+    const r = row;
+    for (let i = 0; i < tryCount; i++) {
+      const inputs = word.split('').map(() => ({
+        ref: React.createRef(),
+        result: '',
+        letter: '',
+        disable: r === i ? false : true,
+      }));
+      inputMaster.push(inputs)
+    }
+
+    setLetterInputs(inputMaster)
+  }, []);
+
+  const setLetter = (index: any, letter: any) => {
+    setLetterInputs(prevState => {
+      const newInputs = [...prevState];
+      newInputs[row][index].letter = letter.toUpperCase();
+      return newInputs;
+    })
+  }
+
+  const setResult = (index: any, result: any) => {
+    setLetterInputs(prevState => {
+      const newInputs = [...prevState];
+      newInputs[row][index].result = result;
+      newInputs[row][index].disable = true;
+      return newInputs;
+    })
+  }
+
+  const unsetDisable = (r: any) => {
+    setLetterInputs(prevState => {
+      const newInputs = [...prevState];
+      newInputs[r]?.map(input => input.disable = false)
+      return newInputs;
+    })
+  }
+  
+  const handleChange = (value: any, i: any, j: any) => {
+    const max = word.length;
+    if (j < max) {
+      setLetter(j, value);
+      const nextIndex = j === max - 1 ? j : j + 1;
+      letterInputs[i][nextIndex].ref.current.focus();
     }
   }
 
-  const isAllInputFull = () => {
-    console.log(inputRefArray)
-    let emptyInput = inputRefArray.filter( input => input.letter() === '')
-    if (emptyInput.length > 0) return false;
+  const isAllInputFilled = () => {
+    let emptyInput = letterInputs[row]?.filter(input => input.result === '').filter( input => input.letter === '');
+    if (emptyInput && emptyInput.length > 0) return false;
     return true;
   }
 
-  const showResult = () => {
-    let i = 0;
-    inputRefArray = inputRefArray.filter(input => input.result === '').map( input => {
-      console.log(input)
-      if (i < 5) {
-        if (input.letter() === word[i] ) input.result = Status.CORRECT_POSITION;
-        else if (input.letter() !== word[i] && word.includes(input.letter())) input.result = Status.WRONG_POSITION;
-        else input.result = Status.WRONG_CHAR;
-        i++;
-      }
-      return input
+  const showResult = async () => {
+    letterInputs[row]?.map((letterInput, i) => {
+      if (letterInput.letter === word[i]) setResult(i, Status.CORRECT_POSITION)
+      else if (letterInput.letter !== word[i] && word.includes(letterInput.letter)) setResult(i, Status.WRONG_POSITION)
+      else setResult(i, Status.WRONG_CHAR);
+      return letterInput;
     });
+  }
+
+  const showStyle = (result: string) => {
+    if (result === '') return base;
+    else if (result === Status.CORRECT_POSITION) return success;
+    else if (result === Status.WRONG_POSITION) return warning;
+    else return danger;
   }
 
   document.addEventListener('keypress', (e) => {
     if (e.key === "Enter") {
-      console.log(isAllInputFull())
-        if(isAllInputFull()) {
-            showResult()
-        }
+      if(isAllInputFilled()) {
+        showResult().then(() => {
+          let newRow = row + 1;
+          setRow(newRow);
+          unsetDisable(newRow)
+        })
+      }
     }
   })
 
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
+        {/* <img src={logo} className="App-logo" style={{ textAlign: "center" }} alt="logo" /> */}
         <p>
           Word of the Day
         </p>
-        <div style={{ display: 'flex'}}>
-          {inputRefArray.map( (input, i) => <input key={i} type='text' style={input.result ? (input.result === Status.CORRECT_POSITION ? success : (input.result === Status.WRONG_POSITION ? warning : danger)) : base} ref={input.ref} maxLength={1} onChange={handleChange} />)}
-          {/* <input type='text' style={base} ref={inputRef1} maxLength={1} onChange={handleChange} />
-          <input type='text' style={base} ref={inputRef2} maxLength={1} onChange={handleChange} />
-          <input type='text' style={base} ref={inputRef3} maxLength={1} onChange={handleChange} />
-          <input type='text' style={base} ref={inputRef4} maxLength={1} onChange={handleChange} />
-          <input type='text' style={base} ref={inputRef5} maxLength={1} onChange={handleChange} /> */}
+        <div>
+          {letterInputs.map((row, i) => 
+            (<div key={i}>
+              {row.map((input, j) => 
+                <input key={j} 
+                  type='text' 
+                  value={input.letter.toUpperCase()} 
+                  style={showStyle(input.result)} 
+                  ref={input.ref} 
+                  maxLength={1}
+                  disabled={input.disable} 
+                  onChange={(e) => handleChange(e.target.value, i, j)} 
+                />
+              )}
+            </div>)
+          )}
         </div>
-        <p>{inputRefArray.map( (input, i) => <span key={i}>{input.letter()}</span>)}</p>
       </header>
     </div>
   );
 }
-
-const base = {
-  width: 40,
-  height: 40,
-  padding: '0 10px',
-  margin: '0 10px',
-  borderWidth: 1,
-  borderColor: "darkblue",
-  borderRadius: 5,
-  outline: 0,
-
-  '::placeholder': { color: "grey" },
-  '&:focus': {
-    borderWidth: 1,
-    borderColor: "darkblue",
-  },
-};
-
-const success = {
-  width: 40,
-  height: 40,
-  padding: '0 10px',
-  margin: '0 10px',
-  background: "green",
-  borderWidth: 1,
-  borderColor: "darkblue",
-  borderRadius: 5,
-  outline: 0,
-
-  '::placeholder': { color: "grey" },
-  '&:focus': {
-    borderWidth: 1,
-    borderColor: "darkblue",
-  },
-};
-
-const warning = {
-  width: 40,
-  height: 40,
-  padding: '0 10px',
-  margin: '0 10px',
-  background: "yellow",
-  borderWidth: 1,
-  borderColor: "darkblue",
-  borderRadius: 5,
-  outline: 0,
-
-  '::placeholder': { color: "grey" },
-  '&:focus': {
-    borderWidth: 1,
-    borderColor: "darkblue",
-  },
-};
-
-const danger = {
-  width: 40,
-  height: 40,
-  padding: '0 10px',
-  margin: '0 10px',
-  background: "red",
-  borderWidth: 1,
-  borderColor: "darkblue",
-  borderRadius: 5,
-  outline: 0,
-
-  '::placeholder': { color: "grey" },
-  '&:focus': {
-    borderWidth: 1,
-    borderColor: "darkblue",
-  },
-};
 
 export default App;
